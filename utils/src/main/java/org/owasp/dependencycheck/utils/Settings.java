@@ -87,11 +87,11 @@ public final class Settings {
      */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    //<editor-fold defaultstate="collapsed" desc="KEYS used to access settings">
+    // <editor-fold defaultstate="collapsed" desc="KEYS used to access settings">
     /**
      * The collection of keys used within the properties file.
      */
-    //suppress hard-coded password rule
+    // suppress hard-coded password rule
     @SuppressWarnings("squid:S2068")
     public static final class KEYS {
 
@@ -362,6 +362,10 @@ public final class Settings {
          */
         public static final String ANALYZER_NODE_AUDIT_ENABLED = "analyzer.node.audit.enabled";
         /**
+         * The properties key for whether the Node Bulk Audit analyzer is enabled.
+         */
+        public static final String ANALYZER_NODE_BULK_AUDIT_ENABLED = "analyzer.node.bulkaudit.enabled";
+        /**
          * The properties key for whether the Yarn Audit analyzer is enabled.
          */
         public static final String ANALYZER_YARN_AUDIT_ENABLED = "analyzer.yarn.audit.enabled";
@@ -370,9 +374,13 @@ public final class Settings {
          */
         public static final String ANALYZER_PNPM_AUDIT_ENABLED = "analyzer.pnpm.audit.enabled";
         /**
-         * The properties key for supplying the URL to the Node Audit API.
+         * The properties key for supplying the URL to the Node Audit Bulk API.
          */
         public static final String ANALYZER_NODE_AUDIT_URL = "analyzer.node.audit.url";
+        /**
+         * The properties key for supplying the URL to the Node Audit API.
+         */
+        public static final String ANALYZER_NODE_BULK_AUDIT_URL = "analyzer.node.bulkaudit.url";
         /**
          * The properties key for configure whether the Node Audit analyzer
          * should skip devDependencies.
@@ -564,9 +572,14 @@ public final class Settings {
          * The properties key for the Artifactory bearer token
          * (https://www.jfrog.com/confluence/display/RTF/Access+Tokens). It can
          * be generated using:
-         * <pre>curl -u yourUserName -X POST \
+         * 
+         * <pre>
+         * curl -u yourUserName -X POST \
          *    "https://artifactory.techno.ingenico.com/artifactory/api/security/token" \
-         *    -d "username=yourUserName"</pre>.
+         *    -d "username=yourUserName"
+         * </pre>
+         * 
+         * .
          */
         public static final String ANALYZER_ARTIFACTORY_BEARER_TOKEN = "analyzer.artifactory.bearer.token";
         /**
@@ -826,10 +839,10 @@ public final class Settings {
          * constants
          */
         private KEYS() {
-            //do nothing
+            // do nothing
         }
     }
-    //</editor-fold>
+    // </editor-fold>
 
     /**
      * Initialize the settings object.
@@ -888,7 +901,7 @@ public final class Settings {
      * Cleans up resources to prevent memory leaks.
      *
      * @param deleteTemporary flag indicating whether any temporary directories
-     * generated should be removed
+     *                        generated should be removed
      */
     public synchronized void cleanup(boolean deleteTemporary) {
         if (deleteTemporary && tempDirectory != null && tempDirectory.exists()) {
@@ -903,7 +916,7 @@ public final class Settings {
      *
      * @param key the key to determine if the property should be masked
      * @return <code>true</code> if the key is for a sensitive property value;
-     * otherwise <code>false</code>
+     *         otherwise <code>false</code>
      */
     private boolean isKeyMasked(@NotNull String key) {
         if (maskedKeys == null || maskedKeys.isEmpty()) {
@@ -916,7 +929,7 @@ public final class Settings {
      * Obtains the printable/loggable value for a given key/value pair. This
      * will mask some values so as to not leak sensitive information.
      *
-     * @param key the property key
+     * @param key   the property key
      * @param value the property value
      * @return the printable value
      */
@@ -949,7 +962,7 @@ public final class Settings {
      * Logs the properties. This will not log any properties that contain
      * 'password' in the key.
      *
-     * @param header the header to print with the log message
+     * @param header     the header to print with the log message
      * @param properties the properties to log
      */
     private void logProperties(@NotNull final String header, @NotNull final Properties properties) {
@@ -975,7 +988,7 @@ public final class Settings {
     /**
      * Sets a property value.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setString(@NotNull final String key, @NotNull final String value) {
@@ -986,7 +999,7 @@ public final class Settings {
     /**
      * Sets a property value only if the value is not null.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setStringIfNotNull(@NotNull final String key, @Nullable final String value) {
@@ -998,7 +1011,7 @@ public final class Settings {
     /**
      * Sets a property value only if the value is not null and not empty.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setStringIfNotEmpty(@NotNull final String key, @Nullable final String value) {
@@ -1010,7 +1023,7 @@ public final class Settings {
     /**
      * Sets a property value only if the array value is not null and not empty.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setArrayIfNotEmpty(@NotNull final String key, @Nullable final String[] value) {
@@ -1026,7 +1039,7 @@ public final class Settings {
     /**
      * Sets a property value only if the array value is not null and not empty.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setArrayIfNotEmpty(@NotNull final String key, @Nullable final List<String> value) {
@@ -1042,7 +1055,7 @@ public final class Settings {
     /**
      * Sets a property value.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setBoolean(@NotNull final String key, boolean value) {
@@ -1052,7 +1065,7 @@ public final class Settings {
     /**
      * Sets a property value only if the value is not null.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setBooleanIfNotNull(@NotNull final String key, @Nullable final Boolean value) {
@@ -1064,7 +1077,7 @@ public final class Settings {
     /**
      * Sets a float property value.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setFloat(@NotNull final String key, final float value) {
@@ -1074,7 +1087,7 @@ public final class Settings {
     /**
      * Sets a property value.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setInt(@NotNull final String key, final int value) {
@@ -1085,7 +1098,7 @@ public final class Settings {
     /**
      * Sets a property value only if the value is not null.
      *
-     * @param key the key for the property
+     * @param key   the key for the property
      * @param value the value for the property
      */
     public void setIntIfNotNull(@NotNull final String key, @Nullable final Integer value) {
@@ -1096,17 +1109,19 @@ public final class Settings {
 
     /**
      * Merges a new properties file into the current properties. This method
-     * allows for the loading of a user provided properties file.<br><br>
+     * allows for the loading of a user provided properties file.<br>
+     * <br>
      * <b>Note</b>: even if using this method - system properties will be loaded
      * before properties loaded from files.
      *
      * @param filePath the path to the properties file to merge.
      * @throws java.io.FileNotFoundException is thrown when the filePath points
-     * to a non-existent file
-     * @throws java.io.IOException is thrown when there is an exception
-     * loading/merging the properties
+     *                                       to a non-existent file
+     * @throws java.io.IOException           is thrown when there is an exception
+     *                                       loading/merging the properties
      */
-    @SuppressFBWarnings(justification = "try with resource will clenaup the resources", value = {"OBL_UNSATISFIED_OBLIGATION"})
+    @SuppressFBWarnings(justification = "try with resource will clenaup the resources", value = {
+            "OBL_UNSATISFIED_OBLIGATION" })
     public void mergeProperties(@NotNull final File filePath) throws FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(filePath)) {
             mergeProperties(fis);
@@ -1115,17 +1130,19 @@ public final class Settings {
 
     /**
      * Merges a new properties file into the current properties. This method
-     * allows for the loading of a user provided properties file.<br><br>
+     * allows for the loading of a user provided properties file.<br>
+     * <br>
      * Note: even if using this method - system properties will be loaded before
      * properties loaded from files.
      *
      * @param filePath the path to the properties file to merge.
      * @throws java.io.FileNotFoundException is thrown when the filePath points
-     * to a non-existent file
-     * @throws java.io.IOException is thrown when there is an exception
-     * loading/merging the properties
+     *                                       to a non-existent file
+     * @throws java.io.IOException           is thrown when there is an exception
+     *                                       loading/merging the properties
      */
-    @SuppressFBWarnings(justification = "try with resource will clenaup the resources", value = {"OBL_UNSATISFIED_OBLIGATION"})
+    @SuppressFBWarnings(justification = "try with resource will clenaup the resources", value = {
+            "OBL_UNSATISFIED_OBLIGATION" })
     public void mergeProperties(@NotNull final String filePath) throws FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(filePath)) {
             mergeProperties(fis);
@@ -1134,13 +1151,14 @@ public final class Settings {
 
     /**
      * Merges a new properties file into the current properties. This method
-     * allows for the loading of a user provided properties file.<br><br>
+     * allows for the loading of a user provided properties file.<br>
+     * <br>
      * <b>Note</b>: even if using this method - system properties will be loaded
      * before properties loaded from files.
      *
      * @param stream an Input Stream pointing at a properties file to merge
      * @throws java.io.IOException is thrown when there is an exception
-     * loading/merging the properties
+     *                             loading/merging the properties
      */
     public void mergeProperties(@NotNull final InputStream stream) throws IOException {
         props.load(stream);
@@ -1229,7 +1247,7 @@ public final class Settings {
      * will return the value from the system properties before the values in the
      * contained configuration file.
      *
-     * @param key the key to lookup within the properties file
+     * @param key          the key to lookup within the properties file
      * @param defaultValue the default value for the requested property
      * @return the property from the properties file
      */
@@ -1245,7 +1263,8 @@ public final class Settings {
      */
     public synchronized File getTempDirectory() throws IOException {
         if (tempDirectory == null) {
-            final File baseTemp = new File(getString(Settings.KEYS.TEMP_DIRECTORY, System.getProperty("java.io.tmpdir")));
+            final File baseTemp = new File(
+                    getString(Settings.KEYS.TEMP_DIRECTORY, System.getProperty("java.io.tmpdir")));
             tempDirectory = FileUtils.createTempDirectory(baseTemp);
         }
         return tempDirectory;
@@ -1270,7 +1289,7 @@ public final class Settings {
      * If the property is not set then {@code null} will be returned.
      *
      * @param key the key to get from this
-     * {@link org.owasp.dependencycheck.utils.Settings}.
+     *            {@link org.owasp.dependencycheck.utils.Settings}.
      * @return the list or {@code null} if the key wasn't present.
      */
     public String[] getArray(@NotNull final String key) {
@@ -1308,7 +1327,10 @@ public final class Settings {
      * @param key the key to lookup within the properties file
      * @return the property from the properties file
      * @throws org.owasp.dependencycheck.utils.InvalidSettingException is thrown
-     * if there is an error retrieving the setting
+     *                                                                 if there is
+     *                                                                 an error
+     *                                                                 retrieving
+     *                                                                 the setting
      */
     public int getInt(@NotNull final String key) throws InvalidSettingException {
         try {
@@ -1324,10 +1346,10 @@ public final class Settings {
      * method will return the value from the system properties before the values
      * in the contained configuration file.
      *
-     * @param key the key to lookup within the properties file
+     * @param key          the key to lookup within the properties file
      * @param defaultValue the default value to return
      * @return the property from the properties file or the defaultValue if the
-     * property does not exist or cannot be converted to an integer
+     *         property does not exist or cannot be converted to an integer
      */
     public int getInt(@NotNull final String key, int defaultValue) {
         int value;
@@ -1352,7 +1374,10 @@ public final class Settings {
      * @param key the key to lookup within the properties file
      * @return the property from the properties file
      * @throws org.owasp.dependencycheck.utils.InvalidSettingException is thrown
-     * if there is an error retrieving the setting
+     *                                                                 if there is
+     *                                                                 an error
+     *                                                                 retrieving
+     *                                                                 the setting
      */
     public long getLong(@NotNull final String key) throws InvalidSettingException {
         try {
@@ -1372,7 +1397,10 @@ public final class Settings {
      * @param key the key to lookup within the properties file
      * @return the property from the properties file
      * @throws org.owasp.dependencycheck.utils.InvalidSettingException is thrown
-     * if there is an error retrieving the setting
+     *                                                                 if there is
+     *                                                                 an error
+     *                                                                 retrieving
+     *                                                                 the setting
      */
     public boolean getBoolean(@NotNull final String key) throws InvalidSettingException {
         return Boolean.parseBoolean(getString(key));
@@ -1385,9 +1413,9 @@ public final class Settings {
      * the system properties before the values in the contained configuration
      * file.
      *
-     * @param key the key to lookup within the properties file
+     * @param key          the key to lookup within the properties file
      * @param defaultValue the default value to return if the setting does not
-     * exist
+     *                     exist
      * @return the property from the properties file
      */
     public boolean getBoolean(@NotNull final String key, boolean defaultValue) {
@@ -1401,9 +1429,9 @@ public final class Settings {
      * the system properties before the values in the contained configuration
      * file.
      *
-     * @param key the key to lookup within the properties file
+     * @param key          the key to lookup within the properties file
      * @param defaultValue the default value to return if the setting does not
-     * exist
+     *                     exist
      * @return the property from the properties file
      */
     public float getFloat(@NotNull final String key, float defaultValue) {
@@ -1423,10 +1451,10 @@ public final class Settings {
      * data directory does not exist it will be created.
      *
      * @param connectionStringKey the property file key for the connection
-     * string
-     * @param dbFileNameKey the settings key for the db filename
+     *                            string
+     * @param dbFileNameKey       the settings key for the db filename
      * @return the connection string
-     * @throws IOException thrown the data directory cannot be created
+     * @throws IOException             thrown the data directory cannot be created
      * @throws InvalidSettingException thrown if there is an invalid setting
      */
     public String getConnectionString(String connectionStringKey, String dbFileNameKey)
@@ -1444,14 +1472,16 @@ public final class Settings {
                 fileName = getString(dbFileNameKey);
             }
             if (fileName == null) {
-                final String msg = String.format("Invalid properties file to get a file based connection string; '%s' must be defined.",
+                final String msg = String.format(
+                        "Invalid properties file to get a file based connection string; '%s' must be defined.",
                         dbFileNameKey);
                 throw new InvalidSettingException(msg);
             }
             if (connStr.startsWith("jdbc:h2:file:") && fileName.endsWith(".mv.db")) {
                 fileName = fileName.substring(0, fileName.length() - 6);
             }
-            // yes, for H2 this path won't actually exists - but this is sufficient to get the value needed
+            // yes, for H2 this path won't actually exists - but this is sufficient to get
+            // the value needed
             final File dbFile = new File(directory, fileName);
             final String cString = String.format(connStr, dbFile.getCanonicalPath());
             LOGGER.debug("Connection String: '{}'", cString);
@@ -1466,7 +1496,7 @@ public final class Settings {
      *
      * @return the data directory to store data files
      * @throws java.io.IOException is thrown if an java.io.IOException occurs of
-     * course...
+     *                             course...
      */
     public File getDataDirectory() throws IOException {
         final File path = getDataFile(Settings.KEYS.DATA_DIRECTORY);
@@ -1483,7 +1513,7 @@ public final class Settings {
      *
      * @return the data directory to store data files
      * @throws java.io.IOException is thrown if an java.io.IOException occurs of
-     * course...
+     *                             course...
      */
     public File getH2DataDirectory() throws IOException {
         final String h2Test = getString(Settings.KEYS.H2_DATA_DIRECTORY);
@@ -1503,7 +1533,7 @@ public final class Settings {
     /**
      * Generates a new temporary file name that is guaranteed to be unique.
      *
-     * @param prefix the prefix for the file name to generate
+     * @param prefix    the prefix for the file name to generate
      * @param extension the extension of the generated file name
      * @return a temporary File
      * @throws java.io.IOException if any.

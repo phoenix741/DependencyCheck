@@ -30,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.owasp.dependencycheck.utils.Settings;
 import org.owasp.dependencycheck.utils.URLConnectionFactory;
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+
+import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.jcs.access.exception.CacheException;
 
 import static org.owasp.dependencycheck.analyzer.NodeAuditAnalyzer.DEFAULT_URL;
@@ -85,10 +88,20 @@ public class NodeAuditSearch {
      *
      * @param settings the configured settings
      * @throws java.net.MalformedURLException thrown if the configured URL is
-     * invalid
+     *                                        invalid
      */
     public NodeAuditSearch(Settings settings) throws MalformedURLException {
-        final String searchUrl = settings.getString(Settings.KEYS.ANALYZER_NODE_AUDIT_URL, DEFAULT_URL);
+        this(settings, settings.getString(Settings.KEYS.ANALYZER_NODE_AUDIT_URL, DEFAULT_URL));
+    }
+
+    /**
+     * Creates a NodeAuditSearch for the given repository URL.
+     *
+     * @param settings the configured settings
+     * @throws java.net.MalformedURLException thrown if the configured URL is
+     *                                        invalid
+     */
+    protected NodeAuditSearch(Settings settings, String searchUrl) throws MalformedURLException {
         LOGGER.debug("Node Audit Search URL: {}", searchUrl);
         this.nodeAuditUrl = new URL(searchUrl);
         this.settings = settings;
@@ -111,14 +124,52 @@ public class NodeAuditSearch {
     }
 
     /**
+     * Construct payload and submit package to Node Audit API.
+     * 
+     * @param packageJson         a raw package-lock.json file
+     * @param dependencyMap       a collection of module/version pairs that is
+     * @param skipDevDependencies whether devDependencies should be skipped
+     *                            populated while building the payload
+     * @return a List of zero or more Advisory object
+     * @throws SearchException if Node Audit API is unable to analyze the
+     *                         package
+     * @throws IOException     if it's unable to connect to Node Audit API
+     */
+    public List<Advisory> submitPackage(JsonObject lockJson, JsonObject packageJson,
+            MultiValuedMap<String, String> dependencyMap, boolean skipDevDependencies)
+            throws SearchException, IOException {
+        final JsonObject payload = NpmPayloadBuilder.build(lockJson, packageJson, dependencyMap, skipDevDependencies);
+        return submitPackage(payload);
+    }
+
+    /**
+     * Construct payload and submit package to Node Audit API.
+     * 
+     * @param packageJson         a raw package-lock.json file
+     * @param dependencyMap       a collection of module/version pairs that is
+     * @param skipDevDependencies whether devDependencies should be skipped
+     *                            populated while building the payload
+     * 
+     * @return a List of zero or more Advisory object
+     * @throws SearchException if Node Audit API is unable to analyze the
+     *                         package
+     * @throws IOException     if it's unable to connect to Node Audit API
+     */
+    public List<Advisory> submitPackage(JsonObject packageJson, MultiValuedMap<String, String> dependencyMap,
+            final boolean skipDevDependencies) throws SearchException, IOException {
+        final JsonObject payload = NpmPayloadBuilder.build(packageJson, dependencyMap, skipDevDependencies);
+        return submitPackage(payload);
+    }
+
+    /**
      * Submits the package.json file to the Node Audit API and returns a list of
      * zero or more Advisories.
      *
      * @param packageJson the package.json file retrieved from the Dependency
      * @return a List of zero or more Advisory object
      * @throws SearchException if Node Audit API is unable to analyze the
-     * package
-     * @throws IOException if it's unable to connect to Node Audit API
+     *                         package
+     * @throws IOException     if it's unable to connect to Node Audit API
      */
     public List<Advisory> submitPackage(JsonObject packageJson) throws SearchException, IOException {
         String key = null;
@@ -134,18 +185,31 @@ public class NodeAuditSearch {
     }
 
     /**
+     * Parses the response from the Node Audit API.
+     * 
+     * @param jsonResponse The response from the Node Audit API
+     * @return a List of zero or more Advisory object
+     * @throws JSONException thrown if there is an error parsing the JSON
+     */
+    protected List<Advisory> parseResponse(final JSONObject jsonResponse) throws JSONException {
+        final NpmAuditParser parser = new NpmAuditParser();
+        return parser.parse(jsonResponse);
+    }
+
+    /**
      * Submits the package.json file to the Node Audit API and returns a list of
      * zero or more Advisories.
      *
      * @param packageJson the package.json file retrieved from the Dependency
-     * @param key the key for the cache entry
-     * @param count the current retry count
+     * @param key         the key for the cache entry
+     * @param count       the current retry count
      * @return a List of zero or more Advisory object
      * @throws SearchException if Node Audit API is unable to analyze the
-     * package
-     * @throws IOException if it's unable to connect to Node Audit API
+     *                         package
+     * @throws IOException     if it's unable to connect to Node Audit API
      */
-    private List<Advisory> submitPackage(JsonObject packageJson, String key, int count) throws SearchException, IOException {
+    private List<Advisory> submitPackage(JsonObject packageJson, String key, int count)
+            throws SearchException, IOException {
         try {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("----------------------------------------");
@@ -178,8 +242,7 @@ public class NodeAuditSearch {
                     try (InputStream in = new BufferedInputStream(conn.getInputStream());
                             JsonReader jsonReader = Json.createReader(in)) {
                         final JSONObject jsonResponse = new JSONObject(jsonReader.readObject().toString());
-                        final NpmAuditParser parser = new NpmAuditParser();
-                        final List<Advisory> advisories = parser.parse(jsonResponse);
+                        final List<Advisory> advisories = parseResponse(jsonResponse);
                         if (cache != null) {
                             cache.put(key, advisories);
                         }
@@ -206,7 +269,8 @@ public class NodeAuditSearch {
                 case 400:
                     LOGGER.debug("Invalid payload submitted to Node Audit API. Received response code: {} {}",
                             conn.getResponseCode(), conn.getResponseMessage());
-                    throw new SearchException("Could not perform Node Audit analysis. Invalid payload submitted to Node Audit API.");
+                    throw new SearchException(
+                            "Could not perform Node Audit analysis. Invalid payload submitted to Node Audit API.");
                 default:
                     LOGGER.debug("Could not connect to Node Audit API. Received response code: {} {}",
                             conn.getResponseCode(), conn.getResponseMessage());
@@ -215,8 +279,10 @@ public class NodeAuditSearch {
         } catch (IOException ex) {
             if (ex instanceof javax.net.ssl.SSLHandshakeException
                     && ex.getMessage().contains("unable to find valid certification path to requested target")) {
-                final String msg = String.format("Unable to connect to '%s' - the Java trust store does not contain a trusted root for the cert. "
-                        + " Please see https://github.com/jeremylong/InstallCert for one method of updating the trusted certificates.", nodeAuditUrl);
+                final String msg = String.format(
+                        "Unable to connect to '%s' - the Java trust store does not contain a trusted root for the cert. "
+                                + " Please see https://github.com/jeremylong/InstallCert for one method of updating the trusted certificates.",
+                        nodeAuditUrl);
                 throw new URLConnectionFailureException(msg, ex);
             }
             throw ex;

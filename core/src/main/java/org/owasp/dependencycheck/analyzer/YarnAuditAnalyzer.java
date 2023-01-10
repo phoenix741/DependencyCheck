@@ -88,7 +88,7 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
      * yarn audit --offline to generate the payload to be sent to the NPM API.
      *
      * @param dependency the yarn lock file
-     * @param engine the analysis engine
+     * @param engine     the analysis engine
      * @throws AnalysisException thrown if there is an error analyzing the file
      */
     @Override
@@ -210,7 +210,8 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
 
             args.add(getYarn());
             args.add("audit");
-            //offline audit is not supported - but the audit request is generated in the verbose output
+            // offline audit is not supported - but the audit request is generated in the
+            // verbose output
             args.add("--offline");
             if (skipDevDependencies) {
                 args.add("--groups");
@@ -221,8 +222,10 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
             final ProcessBuilder builder = new ProcessBuilder(args);
             builder.directory(folder);
             LOGGER.debug("Launching: {}", args);
-            // Workaround 64k limitation of InputStream, redirect stdout to a file that we will read later
-            // instead of reading directly stdout from Process's InputStream which is topped at 64k
+            // Workaround 64k limitation of InputStream, redirect stdout to a file that we
+            // will read later
+            // instead of reading directly stdout from Process's InputStream which is topped
+            // at 64k
 
             final File tmpFile = getSettings().getTempFile("yarn_audit", "json");
             builder.redirectOutput(tmpFile);
@@ -240,7 +243,8 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
                         .filter(line -> line.contains("Audit Request"))
                         .findFirst().get();
                 String auditRequest;
-                try (JsonReader reader = Json.createReader(IOUtils.toInputStream(auditRequestJson, StandardCharsets.UTF_8))) {
+                try (JsonReader reader = Json
+                        .createReader(IOUtils.toInputStream(auditRequestJson, StandardCharsets.UTF_8))) {
                     final JsonObject jsonObject = reader.readObject();
                     auditRequest = jsonObject.getString("data");
                     auditRequest = auditRequest.substring(15);
@@ -253,7 +257,9 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
                 throw new AnalysisException("Yarn audit process was interrupted.", ex);
             }
         } catch (IOException ioe) {
-            throw new AnalysisException("yarn audit failure; this error can be ignored if you are not analyzing projects with a yarn lockfile.", ioe);
+            throw new AnalysisException(
+                    "yarn audit failure; this error can be ignored if you are not analyzing projects with a yarn lockfile.",
+                    ioe);
         }
     }
 
@@ -262,32 +268,31 @@ public class YarnAuditAnalyzer extends AbstractNpmAnalyzer {
      * information, creating a payload to submit to the npm audit API,
      * submitting the payload, and returning the identified advisories.
      *
-     * @param lockFile a reference to the package-lock.json
-     * @param packageFile a reference to the package.json
-     * @param dependency a reference to the dependency-object for the yarn.lock
+     * @param lockFile      a reference to the package-lock.json
+     * @param packageFile   a reference to the package.json
+     * @param dependency    a reference to the dependency-object for the yarn.lock
      * @param dependencyMap a collection of module/version pairs; during
-     * creation of the payload the dependency map is populated with the
-     * module/version information.
+     *                      creation of the payload the dependency map is populated
+     *                      with the
+     *                      module/version information.
      * @return a list of advisories
      * @throws AnalysisException thrown when there is an error creating or
-     * submitting the npm audit API payload
+     *                           submitting the npm audit API payload
      */
     private List<Advisory> analyzePackage(final File lockFile, final File packageFile,
             Dependency dependency, MultiValuedMap<String, String> dependencyMap)
             throws AnalysisException {
         try {
-            final boolean skipDevDependencies = getSettings().getBoolean(Settings.KEYS.ANALYZER_NODE_AUDIT_SKIPDEV, false);
+            final boolean skipDevDependencies = getSettings().getBoolean(Settings.KEYS.ANALYZER_NODE_AUDIT_SKIPDEV,
+                    false);
             // Retrieves the contents of package-lock.json from the Dependency
             final JsonObject lockJson = fetchYarnAuditJson(dependency, skipDevDependencies);
             // Retrieves the contents of package-lock.json from the Dependency
             final JsonReader packageReader = Json.createReader(FileUtils.openInputStream(packageFile));
             final JsonObject packageJson = packageReader.readObject();
 
-            // Modify the payload to meet the NPM Audit API requirements
-            final JsonObject payload = NpmPayloadBuilder.build(lockJson, packageJson, dependencyMap, skipDevDependencies);
-
             // Submits the package payload to the nsp check service
-            return getSearcher().submitPackage(payload);
+            return getSearcher().submitPackage(lockJson, packageJson, dependencyMap, skipDevDependencies);
 
         } catch (URLConnectionFailureException e) {
             this.setEnabled(false);
